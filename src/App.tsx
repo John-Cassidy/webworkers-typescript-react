@@ -3,7 +3,8 @@ import './App.css';
 import { processList } from './longProcess/enums';
 import Loader from './components/Loader';
 import Table from './components/Table';
-import { GetDataType, ProfileListType } from './data/dataTypes';
+import { GetDataType, listPageSize, ProfileListType } from './data/dataTypes';
+import Pagination from './components/Pagination';
 
 type LengthCountType = {
   loading: boolean;
@@ -31,6 +32,46 @@ const App = () => {
     list: [],
     page: 1,
   });
+
+  const handlePageNumber = (userSelectedPage: number) => {
+    if (window.Worker) {
+      const request = {
+        action: processList.getData,
+        period: 'pageNumber',
+        thePageNumber: userSelectedPage,
+      } as GetDataType;
+
+      getData.postMessage(JSON.stringify(request));
+    }
+  };
+  const prevHandler = (userSelectedPage: number) => {
+    if (profileList.page === 1) {
+      return;
+    }
+
+    if (window.Worker) {
+      const request = {
+        action: processList.getData,
+        period: 'prev',
+        thePageNumber: userSelectedPage - 1,
+      } as GetDataType;
+
+      getData.postMessage(JSON.stringify(request));
+    }
+  };
+  const nextHandler = (userSelectedPage: number, thePageLength: number) => {
+    if (userSelectedPage < thePageLength) {
+      if (window.Worker) {
+        const request = {
+          action: processList.getData,
+          period: 'next',
+          thePageNumber: userSelectedPage + 1,
+        } as GetDataType;
+
+        getData.postMessage(JSON.stringify(request));
+      }
+    }
+  };
 
   useEffect(() => {
     if (window.Worker) {
@@ -91,6 +132,17 @@ const App = () => {
         ) : (
           <>
             <Table list={profileList.list} />
+            <Pagination
+              page={profileList.page}
+              pages={lengthCount.value / listPageSize}
+              pageClick={(pageNumber) => {
+                handlePageNumber(pageNumber);
+              }}
+              prevHandler={() => prevHandler(profileList.page)}
+              nextHandler={() =>
+                nextHandler(profileList.page, lengthCount.value / listPageSize)
+              }
+            />
           </>
         )}
       </section>
